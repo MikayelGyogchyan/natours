@@ -19,14 +19,11 @@ app.get('/api/v1/tours', (req, res) => {
   });
 });
 
-// the variable we define using : 
-// we created a variable called id. It could be anything else 
 app.get('/api/v1/tours/:id', (req, res) => {
-  console.log(req.params); // { id: '5' } //  req.params is where all the parameters of all the variables that we define are stored. req.params is a nice object which automaticaly assigns teh value to our variable. 
-  const id = req.params.id * 1 // with this we convert the valuus from strings to nums. Multyplying a string number with a number, it converts that to a number
+  console.log(req.params);
+  const id = req.params.id + 1 
   const tour = tours.find(el => el.id === id)
 
-  // if(id > tours.length) {
   if(!tour) {
     return res.status(404).json({
       status: 'failed',
@@ -59,6 +56,22 @@ app.post('/api/v1/tours', (req, res) => {
     })}
   );
 });
+
+app.patch('/api/v1/tours/:id', (req, res) => {
+  if(req.params.id * 1 > tours.length) {
+    return res.status(404).json({
+      status: 'failed',
+      message: 'Invalid ID'
+    })
+  }
+
+  res.status(200).json({
+    status: 'success',
+    data: {
+      tour: '<Updated tour here...>'
+    }
+  })
+})
 
 const port = 3000;
 app.listen(port, () => {
