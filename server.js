@@ -3,7 +3,6 @@ dotenv.config({ path: './config.env' }); // the reading of the variables from th
 
 const app = require('./app');
 
-
 // SET NODE_ENV=development nodemon server.js
 
 // console.log(app.get('env')); // development // thst is the environment that we are currently in.
