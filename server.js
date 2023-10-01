@@ -1,14 +1,23 @@
-const dotenv = require('dotenv');
-dotenv.config({ path: './config.env' }); // the reading of the variables from the file which happens here, only needs to happen once. It's then in the process and the process is the same, no matter in what file we are
 
+const mongoose = require('mongoose')
+const dotenv = require('dotenv');
 const app = require('./app');
 
-// SET NODE_ENV=development nodemon server.js
+dotenv.config({ path: './config.env' }); // the reading of the variables from the file which happens here, only needs to happen once. It's then in the process and the process is the same, no matter in what file we are
 
-// console.log(app.get('env')); // development // thst is the environment that we are currently in.
-// console.log(process.env); // production
+const DB = process.env.DATABASE.replace('<PASSWORD>', process.env.DATABASE_PASSWORD); 
+
+mongoose
+  .connect(DB, {
+    useNewUrlParser: true, 
+    useCreateIndex: true, 
+    useFindAndModify: false, 
+    useUnifiedTopology: true
+})
+  .then(() => console.log('DB connection successful'))
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
   console.log(`App running on port ${port}...`);
 });
+
