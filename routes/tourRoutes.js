@@ -3,10 +3,7 @@ const tourController = require("./../controllers/tourController");
 
 const router = express.Router()
 
-router.param('id', tourController.checkID);
-
-// Create a checkBody middleware
-
+// router.param('id', tourController.checkID);
 
 router
   .route('/') // new one
