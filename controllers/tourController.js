@@ -1,14 +1,5 @@
 const Tour = require('./../models/tourModel')
 
-exports.checkBody = (req, res, next) => {
-  if(!req.body.name || !req.body.price) {
-    return res.status(400).json({
-      status: 'failed',
-      message: 'Missing name or price',
-    });
-  } next();
-}
-
 exports.getAllTours = (req, res) => {
   console.log(req.requestTime);
   res.status(200).json({
@@ -34,13 +25,25 @@ exports.getTour = (req, res) => {
   // });
 };
 
-exports.createTour = (req, res) => {
-  res.status(201).json({
-    status: 'success',
-    // data: {
-    //   tour: newTour,
-    // },
-  });
+exports.createTour = async (req, res) => {
+  try{
+    // const newTour = new Tour({})
+    // newTour.save()
+
+    const newTour = await Tour.create(req.body) // into the create function we pass the data that we want to store in the database as a new tour. And that data comes from the post.body - that is stored into the req.body
+
+    res.status(201).json({
+      status: 'success',
+      data: {
+        tour: newTour, // we send newTour along with the response to the client 
+      },
+    });
+  } catch(err) {
+    res.status(400).json({
+      status: 'fail',
+      message: 'invalid data sent !'
+    })
+  }
 };
 
 exports.updateTour = (req, res) => {

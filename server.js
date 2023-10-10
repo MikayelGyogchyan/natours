@@ -23,8 +23,3 @@ app.listen(port, () => {
   console.log(`App running on port ${port}...`);
 });
  
-/*
-In this file we wanna connect to the database, but everything that is 
-about models themselves will always live inside of a file, inside of 
-the models folder.
-*/
