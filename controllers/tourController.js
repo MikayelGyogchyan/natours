@@ -1,28 +1,41 @@
 const Tour = require('./../models/tourModel')
 
-exports.getAllTours = (req, res) => {
-  console.log(req.requestTime);
-  res.status(200).json({
-    status: 'success',
-    requestedAt: req.requestTime,
-    // results: tours.length,
-    // data: {
-    //   tours: tours,
-    // },
-  });
+exports.getAllTours = async (req, res) => {
+  try{
+    const tours = await Tour.find()
+    
+    res.status(200).json({
+      status: 'success',
+      results: tours.length, // .find() will return an array of all docs
+      data: {
+        tours
+      },
+    });
+  } catch(err) {
+    res.status(404).json({
+      status: 'fail',
+      message: err
+    })
+  }
 };
 
-exports.getTour = (req, res) => {
-  console.log(req.params);
-  const id = req.params.id + 1;
-  // const tour = tours.find((el) => el.id === id);
-
-  // res.status(200).json({
-  //   status: 'success',
-  //   data: {
-  //     tour: tour,
-  //   },
-  // });
+// finding/querying documents from the database
+exports.getTour = async (req, res) => {
+  try{
+    const tour = await Tour.findById(req.params.id) // we have 'find' to find all, 'findOne' to find one, and 'findById' is given us from the mongoose which is the same as 'Tour.findOne({ _id: req.params.id })' = 'Tour.findById(req.params.id)'
+    
+    res.status(200).json({
+      status: 'success',
+      data: {
+        tour: tour,
+      },
+    });
+  } catch(err) {
+    res.status(404).json({
+      status: 'fail',
+      message: err
+    })
+  } 
 };
 
 exports.createTour = async (req, res) => {
