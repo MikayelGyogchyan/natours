@@ -59,14 +59,26 @@ exports.createTour = async (req, res) => {
   }
 };
 
-exports.updateTour = (req, res) => {
-
-  res.status(200).json({
-    status: 'success',
-    data: {
-      tour: '<Updated tour here...>',
-    },
-  });
+exports.updateTour = async (req, res) => {
+  try{
+    const tour = await Tour.findByIdAndUpdate(req.params.id, req.body, { // first paramenter is the ID of the document that is to be updated. Second param is the data that we want to change  
+      // this updates the fields that are different in the body. This wont work with 'put' method , only with 'patch'. Therefore, the patch method is more useful that the 'put' method 
+      new: true, // this way the new updated document is the one that will be returned
+      runValidators: true // each time that we update a certain document, then the validators that we specified in the schema will run again.
+    }) 
+    
+    res.status(200).json({
+      status: 'success',
+      data: {
+        tour
+      },
+    });
+  } catch(err) {
+    res.status(404).json({
+      status: 'fail',
+      message: err
+    })
+  }
 };
 
 exports.deleteTour = (req, res) => {
@@ -75,3 +87,26 @@ exports.deleteTour = (req, res) => {
     data: null,
   });
 };
+
+/*
+All the findByIdAndUpdate, findById, find methods are query methods.
+
+findById is a shortcut for findOne.
+
+Model.deleteMany()
+Model.deleteOne()
+Model.find()
+Model.findById()
+Model.findByIdAndDelete() // 
+Model.findByIdAndRemove() // these are shortcuts for Model.findOneAndRemove(), Model.findOneAndReplace(), Model.findOneAndUpdate()
+Model.findByIdAndUpdate() //
+Model.findOne()
+Model.findOneAndDelete()
+Model.findOneAndRemove()
+Model.findOneAndReplace()
+Model.findOneAndUpdate()
+Model.replaceOne()
+Model.updateMany()
+Model.updateOne()
+
+*/
