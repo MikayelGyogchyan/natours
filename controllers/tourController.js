@@ -2,23 +2,33 @@ const Tour = require('./../models/tourModel');
 
 exports.getAllTours = async (req, res) => {
   try {
-    console.log(req.query); // { difficulty: 'easy', duration: { gte: '5' } }
-
+    console.log(req.query); 
+    
     // BUILD QUERY
-    // 1. Filtring
+    // 1A. Filtring
     const queryObj = { ...req.query };
-    const excludedFields = ['page', 'sort', 'limit', 'fields']; // creating an array of all the fields that we want to exlude. For tese will be used another methods and not find
+    const excludedFields = ['page', 'sort', 'limit', 'fields']; 
     excludedFields.forEach(el => delete queryObj[el]);
 
-    // 2. Advanced Filtering
+    // 1B. Advanced Filtering
     let queryStr = JSON.stringify(queryObj);
-    queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, match => `$${match}`); // RegExp
-    console.log(JSON.parse(queryStr)); // { difficulty: 'easy', duration: { '$gte': '5' } }
+    queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, match => `$${match}`); 
+    console.log(JSON.parse(queryStr)); 
 
-    // { difficulty: 'easy, duration: { $gte: 5}} // this is how we would manually write the filter object for the query ythat we specified
-    // In postman '127.0.0.1:3000/api/v1/tours?duration[gte]=5' from which we get '{ difficulty: 'easy', duration: { gte: '5' } }'
+    let query = Tour.find(JSON.parse(queryStr));
 
-    const query = Tour.find(JSON.parse(queryStr));
+    // 2. Sorting
+    if(req.query.sort) {
+      const sortBy = req.query.sort.split(',').join(' ')
+      console.log(sortBy); // -price ratingsAverage
+      query = query.sort(sortBy)
+      // sort('price, ratingAverage')
+
+      // Ascending '127.0.0.1:3000/api/v1/tours?sort=price' // 1, 2, 3
+      // Descending '?sort=-price' // 3, 2, 1
+    } else {
+      query = query.sort('-createdAt')
+    }
 
     // EXECUTE QUERY
     const tours = await query;
