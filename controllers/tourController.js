@@ -2,39 +2,26 @@ const Tour = require('./../models/tourModel');
 
 exports.getAllTours = async (req, res) => {
   try {
+    console.log(req.query); // { difficulty: 'easy', duration: { gte: '5' } }
+
     // BUILD QUERY
-    const queryObj = {...req.query} // hard copying. Creating a shallow copy creating new object using this {...req.query}. 
-    const excludedFields = ['page', 'sort', 'limit', 'fields'] // creating an array of all the fields that we want to exlude. For tese will be used another methods and not find
-    excludedFields.forEach(el => delete queryObj[el])
+    // 1. Filtring
+    const queryObj = { ...req.query };
+    const excludedFields = ['page', 'sort', 'limit', 'fields']; // creating an array of all the fields that we want to exlude. For tese will be used another methods and not find
+    excludedFields.forEach(el => delete queryObj[el]);
 
-    // console.log(req.query); // GET /api/v1/tours?duration=5&difficulty=easy&test=23 200 126.994 ms - 9387
-    // { duration: '5', difficulty: 'easy', test: '23' }
-    // like this in express we access the data that is in a query string 'duration=5&difficulty=easy&test=23'
+    // 2. Advanced Filtering
+    let queryStr = JSON.stringify(queryObj);
+    queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, match => `$${match}`); // RegExp
+    console.log(JSON.parse(queryStr)); // { difficulty: 'easy', duration: { '$gte': '5' } }
 
-    // console.log(req.query, queryObj); // { difficulty: 'easy', page: '2', sort: '1', limit: '10' } // { difficulty: 'easy' }
+    // { difficulty: 'easy, duration: { $gte: 5}} // this is how we would manually write the filter object for the query ythat we specified
+    // In postman '127.0.0.1:3000/api/v1/tours?duration[gte]=5' from which we get '{ difficulty: 'easy', duration: { gte: '5' } }'
 
-    // In mongoose there are 2 ways of writing database queries
-
-    // 1. The first one is to use a filter object like this
-
-    // const tours = await Tour.find({
-    //   duration: 5,
-    //   difficulty: 'easy',
-    // });
-    // and as '{ duration: '5', difficulty: 'easy', test: '23' }' is the same that we have inside our .find() method, we will do this
-
-    const query = Tour.find(queryObj);
-
-    // 2. Some special mongoose methods
-
-    // const query = await Tour.find() // the find() will retrun a query, therefore we can chain. Then in query.prototype w have these methods
-    //   .where('duration')
-    //   .equals(5) // lt, lte...
-    //   .where('difficulty')
-    //   .equals('easy');
+    const query = Tour.find(JSON.parse(queryStr));
 
     // EXECUTE QUERY
-    const tours = await query
+    const tours = await query;
 
     // SEND RESPONSE
     res.status(200).json({
