@@ -30,6 +30,14 @@ exports.getAllTours = async (req, res) => {
       query = query.sort('-createdAt')
     }
 
+    // 3. Field Limiting
+    if(req.query.fields) { // 127.0.0.1:3000/api/v1/tours/?fields=name,duration,difficulty,price
+      const fields = req.query.fields.split(',').join(' ')
+      query = query.select(fields) // the operation of selecting only certain fieldnames is called "projectiing"
+    } else {
+      query = query.select('-__v') // '-' is NOT including but excluding, we don't need to send it to the client
+    }
+
     // EXECUTE QUERY
     const tours = await query;
 
