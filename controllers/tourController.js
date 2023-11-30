@@ -15,12 +15,12 @@ exports.getAllTours = async (req, res) => {
   try {
     // EXECUTE QUERY
     const features = new APIFeatures(Tour.find(), req.query)
-    // all of these chaining here works because after calling each of these methods we always return 'this', and 'this' is the object itself which has access to each of these methods 
+      // all of these chaining here works because after calling each of these methods we always return 'this', and 'this' is the object itself which has access to each of these methods
       .filter()
       .sort()
       .limitFields()
-      .paginate()
-    // we keep adding stuff to the query until the end 
+      .paginate();
+    // we keep adding stuff to the query until the end
     // then by the end, by the end, we await the result of that query, so that it can come back with all the documents that were selected. That query now lives in 'features', which is this object
     const tours = await features.query;
 
@@ -103,6 +103,51 @@ exports.deleteTour = async (req, res) => {
     res.status(204).json({
       status: 'success',
       data: null
+    });
+  } catch (err) {
+    res.status(404).json({
+      status: 'fail',
+      message: err
+    });
+  }
+};
+
+exports.getTourStats = async (req, res) => {
+  try {
+    const stats = await Tour.aggregate([
+      // 102. Aggregation Pipeline: Matching and Grouping
+      // 'find' returns a query, 'aggregate' returns an aggregate object. And then only when wee await it, it comes back with the result
+      {
+        $match: { ratingsAverage: { $gte: 4.5 } }
+      },
+      {
+        $group: {
+          // mongoDB works this way (objects inside objects, inside objects)
+          // _id: '$ratingsAverage',
+          // _id: '$difficulty',
+          _id: { $toUpper: '$difficulty'},
+          numTours: {$sum: 1},
+          numRatings: {$sum: 'ratingsQuantity'},
+          avgRating: { $avg: '$ratingsAverage' }, // $avg - is a math operator calculating the average
+          avgPrice: { $avg: '$price' },
+          minPrice: { $min: '$price' },
+          maxPrice: { $max: '$price' }
+        }
+      },
+      {
+        $sort: { avgPrice: 1 } // 1 - for ascending
+      },
+      // {
+      //   // we can match different times
+      //   $match: { _id: { $ne: 'EASY'}} // $ne = not equal // we exclude all the documents that are easy
+      // }
+    ]);
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        stats
+      }
     });
   } catch (err) {
     res.status(404).json({
