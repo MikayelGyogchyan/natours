@@ -2,9 +2,6 @@ const Tour = require('./../models/tourModel');
 const APIFeatures = require('./../utils/apiFeatures');
 
 exports.aliasTopTours = (req, res, next) => {
-  // Prefilling parts of the query object before we reach the getAllTours handler.
-  // And as soon as we get to the 'getAllTours' function, the query object is already prefilled
-  // we prefilled the query string, so that the user doesn't have to do it on its own
   req.query.limit = '5';
   req.query.sort = '-ratingsAverage,price';
   req.query.fields = 'name,price,ratingsAverage,summary,difficulty';
@@ -15,13 +12,11 @@ exports.getAllTours = async (req, res) => {
   try {
     // EXECUTE QUERY
     const features = new APIFeatures(Tour.find(), req.query)
-      // all of these chaining here works because after calling each of these methods we always return 'this', and 'this' is the object itself which has access to each of these methods
       .filter()
       .sort()
       .limitFields()
       .paginate();
-    // we keep adding stuff to the query until the end
-    // then by the end, by the end, we await the result of that query, so that it can come back with all the documents that were selected. That query now lives in 'features', which is this object
+      
     const tours = await features.query;
 
     // SEND RESPONSE
@@ -115,32 +110,23 @@ exports.deleteTour = async (req, res) => {
 exports.getTourStats = async (req, res) => {
   try {
     const stats = await Tour.aggregate([
-      // 102. Aggregation Pipeline: Matching and Grouping
-      // 'find' returns a query, 'aggregate' returns an aggregate object. And then only when wee await it, it comes back with the result
       {
         $match: { ratingsAverage: { $gte: 4.5 } }
       },
       {
         $group: {
-          // mongoDB works this way (objects inside objects, inside objects)
-          // _id: '$ratingsAverage',
-          // _id: '$difficulty',
           _id: { $toUpper: '$difficulty'},
-          numTours: {$sum: 1},
+          numTours: {$sum: 1}, // for each document we add 1
           numRatings: {$sum: 'ratingsQuantity'},
-          avgRating: { $avg: '$ratingsAverage' }, // $avg - is a math operator calculating the average
+          avgRating: { $avg: '$ratingsAverage' }, 
           avgPrice: { $avg: '$price' },
           minPrice: { $min: '$price' },
           maxPrice: { $max: '$price' }
         }
       },
       {
-        $sort: { avgPrice: 1 } // 1 - for ascending
+        $sort: { avgPrice: 1 } 
       },
-      // {
-      //   // we can match different times
-      //   $match: { _id: { $ne: 'EASY'}} // $ne = not equal // we exclude all the documents that are easy
-      // }
     ]);
 
     res.status(200).json({
@@ -156,3 +142,58 @@ exports.getTourStats = async (req, res) => {
     });
   }
 };
+
+// 103. Aggregation Pipeline: Unwinding and Projecting
+
+exports.getMonthlyPlan = async (req, res) => { // 127.0.0.1:3000/api/v1/tours/monthly-plan/2021
+  try{
+    const year = req.params.year * 1 
+
+    const plan = await Tour.aggregate([
+      {
+        $unwind: '$startDates'
+      },
+      {
+        $match: {
+          startDates: {
+            $gte: new Date(`${year}-01-01`), 
+            $lte: new Date(`${year}-12-31`), // to be between the first day of the day of the year and the last day of the current year 
+          }
+        }
+      },
+      {
+        $group: {
+          _id: { $month: '$startDates' }, // grouping by the date
+          numTourStarts: { $sum: 1}, // counting the amount of tours that have a certain month // $sum: 1 - for each document we add 1
+          tours: {$push: '$name'} // we create an array. And we do that using '$push'. As each doc goes through this pipeline, '$name' is the name of the field, in this case the name of the tour
+        }
+      },
+      {
+        $addFields: { month: '$_id'} // the name that we want to add or the field is called 'month', and it has the value of the field with the name '_id'. Simply the name of the field: the value
+      },
+      {
+        $project: {
+          _id: 0 // we give each of the field names a 0 or a 1. 0 will make the _id no longer shows up. 1 will show up
+        }
+      },
+      {
+        $sort: { numTourStarts: -1 } // -1 - descending
+      },
+      {
+        $limit: 12 // this allows us to have only 12 docs/outputs
+      }
+    ])
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        plan
+      }
+    })
+  } catch (err) {
+    res.status(404).json({
+      status: 'fail',
+      message: err
+    });
+  }
+}
