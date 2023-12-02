@@ -51,17 +51,24 @@ const tourSchema = new mongoose.Schema({
   createdAt: { 
     type: Date,
     default: Date.now(), 
-    select: false // This way we hide this from the output. Is the same "-" (is NOT including but excluding)
+    select: false 
   },
   startDates: [Date]
+}, 
+// Into the mongoose.Schema we can pass in not only the schema definition 
+// itself, but also an object for the schema options 
+{
+  toJSON: { virtuals: true}, // each time the data is outputted as JSON, we want 'virtuals: true' (the virtuals to be part of the output ) 
+  toObject: { virtuals: true}
 });
+
+// this virtual prop will be created each time that we get some data out of the database. So the get() function is called a getter.
+tourSchema.virtual('durationWeeks').get(function() { // 104. Virtual Properties
+  return this.duration / 7 // 7 days in a week, so that's the duration in weeks.  
+})
+// we cannot use the Virtual Properties in a query, because they are technically not part of db
 
 const Tour = new mongoose.model('Tour', tourSchema); 
 
 module.exports = Tour
-/*
-We exports the Tour.
-Where we need this Tour? Where are we going to create, 
-query, delete, update tours?
-- In the tourController
-*/
+
