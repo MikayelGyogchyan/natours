@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const slugify = require('slugify');
 
 const tourSchema = new mongoose.Schema({
   name: {
@@ -7,6 +8,7 @@ const tourSchema = new mongoose.Schema({
     unique: true,
     trim: true 
   },
+  slug: String ,
   duration: {
     type: Number,
     required: [true, 'A tour must have a duration'],
@@ -55,20 +57,45 @@ const tourSchema = new mongoose.Schema({
   },
   startDates: [Date]
 }, 
-// Into the mongoose.Schema we can pass in not only the schema definition 
-// itself, but also an object for the schema options 
+
 {
-  toJSON: { virtuals: true}, // each time the data is outputted as JSON, we want 'virtuals: true' (the virtuals to be part of the output ) 
+  toJSON: { virtuals: true}, 
   toObject: { virtuals: true}
 });
 
-// this virtual prop will be created each time that we get some data out of the database. So the get() function is called a getter.
-tourSchema.virtual('durationWeeks').get(function() { // 104. Virtual Properties
-  return this.duration / 7 // 7 days in a week, so that's the duration in weeks.  
+tourSchema.virtual('durationWeeks').get(function() { 
+    return this.duration / 7 
 })
-// we cannot use the Virtual Properties in a query, because they are technically not part of db
+
+// 105. Document Middleware
+
+// DOCUMENT MIDDLEWARE: runs before .save() and .create(). Only in .save() and .create() this middleware is gonna be executed, and not with find() or update()...
+// this is for pre middleware which is gonna run before an actual event. And that event is the 'save' event
+tourSchema.pre('save', function(next) { // this function will be called before an actual document is saved to the db 
+  // console.log(this);
+  this.slug = slugify(this.name, {lower: true})
+  next() // next() will call the next middleware in the stack
+}) 
+
+// tourSchema.pre('save', function(next) {
+//   console.log('Will save doc...');
+//   next()
+// })
+
+// // post middleware functions are executed after all the pre middleware functions have completed 
+// tourSchema.post('save', function(doc, next) { // post middleware has access not only to 'next()' but also to the document that was just saved to the database
+//   console.log(doc); // logging the finished doc
+//   next()
+// })
 
 const Tour = new mongoose.model('Tour', tourSchema); 
 
 module.exports = Tour
 
+/*
+We can have middleware running before and after a certain event. 
+And in the case of document middleware that event is usually the 'save' event.
+Then in the middle of a function itself, we have access to the 
+'this' keyword which is going to point at the currently being saved 
+document
+*/
