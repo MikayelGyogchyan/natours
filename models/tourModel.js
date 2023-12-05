@@ -1,3 +1,12 @@
+/*
+In Model file we have the 
+- mongoose.Schema,
+- Middlewares,
+- we implement instance methods, 
+which are methods that will 
+be availabale on every document after being queried.
+*/
+
 const mongoose = require('mongoose');
 const slugify = require('slugify');
 
@@ -58,7 +67,7 @@ const tourSchema = new mongoose.Schema({
   startDates: [Date],
   secretTour: {
     type: Boolean,
-    default: false // usually tours are not secret
+    default: false 
   }
 }, 
 
@@ -71,36 +80,36 @@ tourSchema.virtual('durationWeeks').get(function() {
     return this.duration / 7 
 })
 
+// 105 Document Middleware
 tourSchema.pre('save', function(next) { 
-  this.slug = slugify(this.name, {lower: true})
+  this.slug = slugify(this.name, {lower: true}) // // the 'this' points to the current document  
   next() 
 }) 
 
-// 106. Query Middleware
-/*
-Query Middleware allows us to run functions before or after a certain query
-is executed.
-*/
+// 106 Query Middleware
+tourSchema.pre(/^find/, function(next) { 
+  
+  this.find({secretTour: { $ne: true }}) // the 'this' points to the current query 
 
-// tourSchema.pre('find', function(next) {
-tourSchema.pre(/^find/, function(next) { // /^find/ is regExp, which says that this middleware should be executed for all the commands (strings) that start with the name find 
-  // find will make this query middleware and not doc middleware
-  // here the 'this' will now point at the current query and not at the current document. Because we are proccessing a query here
-  // creating secret tour field
-  this.find({secretTour: { $ne: true }})
-
-  this.start = Date.now() // line 98
+  this.start = Date.now()
   next()
 })
-// Specifying a post middleware for find
-// this middleware will run after the query has already executed. Therefore it can have access to the docs that were returned
+
 tourSchema.post(/^find/, function(docs, next) {
-  console.log(`Query took ${Date.now() - this.start} milliseconds`); // Query took 132 milliseconds
-  console.log(docs);
+  console.log(`Query took ${Date.now() - this.start} milliseconds`); 
+  // console.log(docs);
+  next()
+})
+
+// 107. Aggregation Middleware
+tourSchema.pre('aggregate', function(next) {
+  this.pipeline().unshift({ $match: {secretTour: { $ne: true }}}) // removing from the output all the docs that have secretTour set to true
+
+  // the 'this' points to the current aggregation object 
+  console.log(this.pipeline()); // this.pipeline() is simply the array that we passed into the aggregate function before (tourController 114-128)
   next()
 })
 
 const Tour = new mongoose.model('Tour', tourSchema); 
 
 module.exports = Tour
-
