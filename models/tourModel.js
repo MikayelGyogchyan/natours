@@ -8,7 +8,8 @@ be availabale on every document after being queried.
 */
 
 const mongoose = require('mongoose');
-const slugify = require('slugify');
+const slugify = require('slugify'); 
+const validator = require('validator'); 
 
 const tourSchema = new mongoose.Schema(
   {
@@ -18,7 +19,8 @@ const tourSchema = new mongoose.Schema(
       unique: true,
       trim: true,
       maxLength: [40, 'A tour name must have lees or equal 40 characters'],
-      minLength: [00, 'A tour name must have more or equal 10 characters']
+      minLength: [10, 'A tour name must have more or equal 10 characters'],
+      // validate: [validator.isAlpha, 'Tour name must only contain characters']
     },
     slug: String,
     duration: {
@@ -51,8 +53,16 @@ const tourSchema = new mongoose.Schema(
       type: Number,
       required: [true, 'A tour must have a price']
     },
-
-    priceDescount: Number,
+    priceDiscount: {
+      type: Number,
+      validate: {
+        validator: function(val) {
+          // this only points to current doc on NEW document creation
+          return val < this.price;
+        },
+        message: 'Discount price ({VALUE}) should be below regular price'
+      }
+    },
 
     summary: {
       type: String,
