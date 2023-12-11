@@ -67,6 +67,7 @@ exports.updateTour = catchAsync(async (req, res, next) => {
 
 exports.deleteTour = catchAsync(async (req, res, next) => {
   await Tour.findByIdAndDelete(req.params.id);
+
   res.status(204).json({
     status: 'success',
     data: null
