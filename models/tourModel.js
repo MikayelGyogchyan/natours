@@ -1,15 +1,6 @@
-/*
-In Model file we have the 
-- mongoose.Schema,
-- Middlewares,
-- we implement instance methods, 
-which are methods that will 
-be availabale on every document after being queried.
-*/
-
 const mongoose = require('mongoose');
-const slugify = require('slugify'); 
-const validator = require('validator'); 
+const slugify = require('slugify');
+// const validator = require('validator');
 
 const tourSchema = new mongoose.Schema(
   {
@@ -18,8 +9,8 @@ const tourSchema = new mongoose.Schema(
       required: [true, 'A tour must have a name'],
       unique: true,
       trim: true,
-      maxLength: [40, 'A tour name must have lees or equal 40 characters'],
-      minLength: [10, 'A tour name must have more or equal 10 characters'],
+      maxlength: [40, 'A tour name must have less or equal then 40 characters'],
+      minlength: [10, 'A tour name must have more or equal then 10 characters']
       // validate: [validator.isAlpha, 'Tour name must only contain characters']
     },
     slug: String,
@@ -63,7 +54,6 @@ const tourSchema = new mongoose.Schema(
         message: 'Discount price ({VALUE}) should be below regular price'
       }
     },
-
     summary: {
       type: String,
       trim: true,
@@ -87,9 +77,32 @@ const tourSchema = new mongoose.Schema(
     secretTour: {
       type: Boolean,
       default: false
-    }
+    },
+    startLocation: {
+      // GeoJSON
+      type: {
+        type: String,
+        default: 'Point',
+        enum: ['Point']
+      },
+      coordinates: [Number],
+      address: String,
+      description: String
+    },
+    locations: [
+      {
+        type: {
+          type: String,
+          default: 'Point',
+          enum: ['Point']
+        },
+        coordinates: [Number],
+        address: String,
+        description: String,
+        day: Number
+      }
+    ],
   },
-
   {
     toJSON: { virtuals: true },
     toObject: { virtuals: true }
@@ -100,35 +113,44 @@ tourSchema.virtual('durationWeeks').get(function() {
   return this.duration / 7;
 });
 
-// 105 Document Middleware
+// DOCUMENT MIDDLEWARE: runs before .save() and .create()
 tourSchema.pre('save', function(next) {
-  this.slug = slugify(this.name, { lower: true }); // the 'this' points to the current document
+  this.slug = slugify(this.name, { lower: true });
   next();
 });
 
-// 106 Query Middleware
+// tourSchema.pre('save', function(next) {
+//   console.log('Will save document...');
+//   next();
+// });
+
+// tourSchema.post('save', function(doc, next) {
+//   console.log(doc);
+//   next();
+// });
+
+// QUERY MIDDLEWARE
+// tourSchema.pre('find', function(next) {
 tourSchema.pre(/^find/, function(next) {
-  this.find({ secretTour: { $ne: true } }); // the 'this' points to the current query
+  this.find({ secretTour: { $ne: true } });
 
   this.start = Date.now();
   next();
 });
 
 tourSchema.post(/^find/, function(docs, next) {
-  console.log(`Query took ${Date.now() - this.start} milliseconds`);
-  // console.log(docs);
+  console.log(`Query took ${Date.now() - this.start} milliseconds!`);
   next();
 });
 
-// 107. Aggregation Middleware
+// AGGREGATION MIDDLEWARE
 tourSchema.pre('aggregate', function(next) {
-  this.pipeline().unshift({ $match: { secretTour: { $ne: true } } }); // removing from the output all the docs that have secretTour set to true
+  this.pipeline().unshift({ $match: { secretTour: { $ne: true } } });
 
-  // the 'this' points to the current aggregation object
   console.log(this.pipeline());
   next();
 });
 
-const Tour = new mongoose.model('Tour', tourSchema);
+const Tour = mongoose.model('Tour', tourSchema);
 
 module.exports = Tour;
