@@ -11,13 +11,11 @@ exports.aliasTopTours = (req, res, next) => {
 };
 
 exports.getAllTours = catchAsync(async (req, res, next) => {
-  // EXECUTE QUERY
   const features = new APIFeatures(Tour.find(), req.query)
     .filter()
     .sort()
     .limitFields()
     .paginate();
-
   const tours = await features.query;
 
   // SEND RESPONSE
@@ -31,16 +29,17 @@ exports.getAllTours = catchAsync(async (req, res, next) => {
 });
 
 exports.getTour = catchAsync(async (req, res, next) => {
-  const tour = await Tour.findById(req.params.id);
+  const tour = await Tour.findById(req.params.id)
+  // Tour.findOne({ _id: req.params.id })
 
-  if(!tour) {
-    return next(new AppError('No tour found with that ID', 404))
+  if (!tour) {
+    return next(new AppError('No tour found with that ID', 404));
   }
 
   res.status(200).json({
     status: 'success',
     data: {
-      tour: tour
+      tour
     }
   });
 });
@@ -62,8 +61,8 @@ exports.updateTour = catchAsync(async (req, res, next) => {
     runValidators: true
   });
 
-  if(!tour) {
-    return next(new AppError('No tour found with that ID', 404))
+  if (!tour) {
+    return next(new AppError('No tour found with that ID', 404));
   }
 
   res.status(200).json({
@@ -77,8 +76,8 @@ exports.updateTour = catchAsync(async (req, res, next) => {
 exports.deleteTour = catchAsync(async (req, res, next) => {
   const tour = await Tour.findByIdAndDelete(req.params.id);
 
-  if(!tour) {
-    return next(new AppError('No tour found with that ID', 404))
+  if (!tour) {
+    return next(new AppError('No tour found with that ID', 404));
   }
 
   res.status(204).json({
@@ -95,8 +94,8 @@ exports.getTourStats = catchAsync(async (req, res, next) => {
     {
       $group: {
         _id: { $toUpper: '$difficulty' },
-        numTours: { $sum: 1 }, // for each document we add 1
-        numRatings: { $sum: 'ratingsQuantity' },
+        numTours: { $sum: 1 },
+        numRatings: { $sum: '$ratingsQuantity' },
         avgRating: { $avg: '$ratingsAverage' },
         avgPrice: { $avg: '$price' },
         minPrice: { $min: '$price' },
@@ -106,6 +105,9 @@ exports.getTourStats = catchAsync(async (req, res, next) => {
     {
       $sort: { avgPrice: 1 }
     }
+    // {
+    //   $match: { _id: { $ne: 'EASY' } }
+    // }
   ]);
 
   res.status(200).json({
@@ -116,11 +118,8 @@ exports.getTourStats = catchAsync(async (req, res, next) => {
   });
 });
 
-// 103. Aggregation Pipeline: Unwinding and Projecting
-
 exports.getMonthlyPlan = catchAsync(async (req, res, next) => {
-  // 127.0.0.1:3000/api/v1/tours/monthly-plan/2021
-  const year = req.params.year * 1;
+  const year = req.params.year * 1; // 2021
 
   const plan = await Tour.aggregate([
     {
@@ -130,30 +129,30 @@ exports.getMonthlyPlan = catchAsync(async (req, res, next) => {
       $match: {
         startDates: {
           $gte: new Date(`${year}-01-01`),
-          $lte: new Date(`${year}-12-31`) // to be between the first day of the day of the year and the last day of the current year
+          $lte: new Date(`${year}-12-31`)
         }
       }
     },
     {
       $group: {
-        _id: { $month: '$startDates' }, // grouping by the date
-        numTourStarts: { $sum: 1 }, // counting the amount of tours that have a certain month // $sum: 1 - for each document we add 1
-        tours: { $push: '$name' } // we create an array. And we do that using '$push'. As each doc goes through this pipeline, '$name' is the name of the field, in this case the name of the tour
+        _id: { $month: '$startDates' },
+        numTourStarts: { $sum: 1 },
+        tours: { $push: '$name' }
       }
     },
     {
-      $addFields: { month: '$_id' } // the name that we want to add or the field is called 'month', and it has the value of the field with the name '_id'. Simply the name of the field: the value
+      $addFields: { month: '$_id' }
     },
     {
       $project: {
-        _id: 0 // we give each of the field names a 0 or a 1. 0 will make the _id no longer shows up. 1 will show up
+        _id: 0
       }
     },
     {
-      $sort: { numTourStarts: -1 } // -1 - descending
+      $sort: { numTourStarts: -1 }
     },
     {
-      $limit: 12 // this allows us to have only 12 docs/outputs
+      $limit: 12
     }
   ]);
 
